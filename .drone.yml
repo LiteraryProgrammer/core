@@ -10,40 +10,40 @@ clone:
     depth: 50
 
 pipeline:
-  install-fed-server:
-    image: owncloudci/core
-    pull: true
-    version: ${FEDERATION_OC_VERSION}
-    core_path: /drone/fed-server
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
-
-  configure-federation-server:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    commands:
-      - cd /drone/fed-server
-      - php occ a:l
-      - php occ a:e testing
-      - php occ a:l
-      - php occ config:system:set trusted_domains 1 --value=server
-      - php occ config:system:set trusted_domains 2 --value=federated
-      - php occ log:manage --level 0
-      - php occ config:list
-      - echo "export TEST_SERVER_FED_URL=http://federated" > /drone/saved-settings.sh
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
-
-  fix-permissions-federation-server:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    commands:
-      - chown www-data /drone/fed-server -R
-    when:
-      matrix:
-        USE_FEDERATED_SERVER: true
+#  install-fed-server:
+#    image: owncloudci/core
+#    pull: true
+#    version: ${FEDERATION_OC_VERSION}
+#    core_path: /drone/fed-server
+#    when:
+#      matrix:
+#        USE_FEDERATED_SERVER: true
+#
+#  configure-federation-server:
+#    image: owncloudci/php:${PHP_VERSION}
+#    pull: true
+#    commands:
+#      - cd /drone/fed-server
+#      - php occ a:l
+#      - php occ a:e testing
+#      - php occ a:l
+#      - php occ config:system:set trusted_domains 1 --value=server
+#      - php occ config:system:set trusted_domains 2 --value=federated
+#      - php occ log:manage --level 0
+#      - php occ config:list
+#      - echo "export TEST_SERVER_FED_URL=http://federated" > /drone/saved-settings.sh
+#    when:
+#      matrix:
+#        USE_FEDERATED_SERVER: true
+#
+#  fix-permissions-federation-server:
+#    image: owncloudci/php:${PHP_VERSION}
+#    pull: true
+#    commands:
+#      - chown www-data /drone/fed-server -R
+#    when:
+#      matrix:
+#        USE_FEDERATED_SERVER: true
 
   restore:
     image: plugins/s3-cache:1
@@ -337,6 +337,7 @@ pipeline:
     pull: true
     environment:
       - TEST_SERVER_URL=http://server
+      - TEST_SERVER_FED_URL=http://federated"
     commands:
       - touch /drone/saved-settings.sh
       - . /drone/saved-settings.sh
@@ -355,6 +356,7 @@ pipeline:
       - TEST_SERVER_URL=http://server
       - PLATFORM=Linux
       - MAILHOG_HOST=email
+      - TEST_SERVER_FED_URL=http://federated"
     commands:
       - touch /drone/saved-settings.sh
       - . /drone/saved-settings.sh
@@ -463,11 +465,11 @@ services:
         USE_SERVER: true
 
   federated:
-    image: owncloudci/php:${PHP_VERSION}
+    image: owncloud/server
     pull: true
     environment:
-      - APACHE_WEBROOT=/drone/fed-server/
-    command: [ "/usr/local/bin/apachectl", "-e", "debug" , "-D", "FOREGROUND" ]
+      - OWNCLOUD_APPS_INSTALL=https://github.com/owncloud/testing/archive/master.tar.gz
+      - OWNCLOUD_APPS_ENABLE=testing
     when:
       matrix:
         USE_FEDERATED_SERVER: true
