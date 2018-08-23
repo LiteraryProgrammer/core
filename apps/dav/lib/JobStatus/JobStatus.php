@@ -20,7 +20,6 @@
  */
 namespace OCA\DAV\JobStatus;
 
-use OCA\DAV\DAV\LazyOpsPlugin;
 use OCA\DAV\JobStatus\Entity\JobStatus as JobStatusEntity;
 use OCA\DAV\JobStatus\Entity\JobStatusMapper;
 use Sabre\DAV\File;

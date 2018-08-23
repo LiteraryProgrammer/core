@@ -319,22 +319,25 @@ OC.FileUpload.prototype = {
 			headers
 		).then(function (status, response) {
 			if (status === 202) {
-				var evtSource = new OC.EventSource(response.xhr.getResponseHeader('oc-jobstatus-location') + '?sse=1');
-				window.addEventListener('error', function() {
-					evtSource.close();
-				});
+				function poll() {
+					$.ajax(response.xhr.getResponseHeader('oc-jobstatus-location')).then(function(data) {
+						var obj = JSON.parse(data);
+						if (obj.status === 'finished') {
+							doneDeferred.resolve(status, response);
+						}
+						if (obj.status === 'error') {
+							OC.Notification.show(obj.errorMessage);
+							doneDeferred.reject(status, response);
+						}
+						if (obj.status === 'started' || obj.status === 'initial') {
+							// call it again after some short delay
+							setTimeout(poll, 1000);
+						}
+					})
+				}
 
-				evtSource.addEventListener('job-status', function(e) {
-					var obj = JSON.parse(e.data);
-					if (obj.status === 'finished') {
-						doneDeferred.resolve(status, response);
-						evtSource.close();
-					}
-					if (obj.status === 'error') {
-						doneDeferred.reject(status, response);
-						evtSource.close();
-					}
-				});
+				// start the polling
+				poll();
 			} else {
 				doneDeferred.resolve(status, response);
 			}
